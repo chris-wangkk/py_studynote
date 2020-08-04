@@ -186,16 +186,86 @@ def demo002():
 
 #ThreadLocal
 '''
+每个Thread可以对ThreadLocal对象可以读写操作且但互不影响,因为所操作的相关属性都是线程的局部变量(不用管理锁)
+    可以理解为全局ThreadLocal变量是一个dict
+    最常用的地方就是为每个线程绑定一个数据库连接,HTTP请求,用户身份信息等
 '''
+import threading
+local_school = threading.local()
+def process_student():
+    std = local_school.std
+    print('Hello, %s (in %s)' % (std, threading.current_thread().name))
+def process_thread(name):
+    local_school.std = name
+    process_student()
+def demo003():
+    t1 = threading.Thread(target= process_thread, args=('Alice',), name='Thread-A')
+    t2 = threading.Thread(target= process_thread, args=('Bob',), name='Thread-B')
+    t1.start()
+    t2.start()
+    t1.join()
+    t2.join()
 
 #进程 vs 线程
 '''
+1.多进程和多线程是实现多任务最常用的两种方式
+要实现多任务,通常会设计Master-Worker模式:Master负责分配任务,Worker负责执行任务(多任务环境下通常是一个Master,多个Worker)
+多进程模式:
+    优点是稳定性高(一个子进程崩溃了,不会影响主进程和其他子进程,主进程除外),Apache早期模式
+    缺点是创建进程的代价大,os能同时运行的进程数也是有限的(在内存和CPU的限制下太多进程会影响调度)
+多线程模式:
+    优点线程切换比进程切换开销小(但也不是非常明显)
+    缺点任何一个线程挂掉都可能直接造成整个进程崩溃(不稳定),IIS服务器默认采用多线程模式
+2.无论是多进程还是多线程,只要数量一多,效率肯定上不去,WHY?
+    任务太多,OS会浪费大量时间进行线程切换,真正执行任务的时间反倒少
+3.计算密集型 vs. IO密集型
+    要最高效地利用CPU,计算密集型任务同时进行的数量应当等于CPU的核心数
+    对于IO密集型任务,采用同步IO会导致大部分时间都在等待IO操作,性能太差(采用多进程/多先也会因2而导致性能问题)
+    -->异步IO(事件驱动模型)
+        Py中单线程的异步编程模型称为协程
 '''
+
 
 #分布式进程
 '''
+Py的multiprocessing模块不但支持多进程,其中managers子模块还支持把多进程分布到多台机器上:
+    一个服务进程可以作为调度者,将任务分布到其他多个进程中,依靠网络通信
 '''
+#通过managers模块把Queue通过网络暴露出去,就可以让其他机器的进程访问Queue
+import random, time, queue
+from multiprocessing.managers import BaseManager
+#发送任务的队列
+task_queue = queue.Queue()
+#接收结果的队列
+result_queue = queue.Queue()
 
+# 从BaseManager继承的QueueManager:
+class QueueManager(BaseManager):
+    pass
+
+def demo004():
+    QueueManager.register('get_task_queue', callable=lambda: task_queue)
+    QueueManager.register('get_result_queue', callable=lambda: result_queue)
+    # 绑定端口5000, 设置验证码'abc':
+    manager = QueueManager(address=('', 5000), authkey=b'abc')
+    # 启动Queue:
+    manager.start()
+    # 获得通过网络访问的Queue对象:
+    task = manager.get_task_queue()
+    result = manager.get_result_queue()
+    # 放几个任务进去:
+    for i in range(10):
+        n = random.randint(0, 10000)
+        print('Put task %d...' % n)
+        task.put(n)
+    # 从result队列读取结果:
+    print('Try get results...')
+    for i in range(10):
+        r = result.get(timeout=10)
+        print('Result: %s' % r)
+    # 关闭:
+    manager.shutdown()
+    print('master exit.')
 
 if __name__=='__main__':
-    demo002()
+    demo003()
