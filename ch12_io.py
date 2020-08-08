@@ -51,11 +51,73 @@ eg:
 
 #StringIO和BytesIO
 '''
+StringIO
+在内存中读写str(操作的只能是str)
+    1.创建一个StringIO,像文件一样调用write方法写入(和读写文件具有一致的接口)
+    2.getvalue()方法用于获得写入后的str
+    3.可以用一个str初始化StringIO,像读文件一样读取
+BytesIO
+在内存中读写bytes(操作二进制数据)
+    1.创建一个BytesIO,像文件一样调用write方法(和读写文件具有一致的接口)
 '''
+from io import StringIO,BytesIO
+def demo003():
+    f1 = StringIO()
+    f1.write("abc")
+    f1.write(" ")
+    f1.write("xyz")
+    print(f1.getvalue())
+    #
+    f2 = StringIO('Hello!\nHi!\nGoodbye!')
+    while True:
+        s = f2.readline()   #按行读取
+        if "" == s:
+            break
+        print(s.strip())
+def demo004():
+    f3 = BytesIO()
+    f3.write("深度学习".encode('utf-8'))
+    print(f3.getvalue())    #bytes
+    #
+    f4 = BytesIO(b'\xe4\xb8\xad\xe6\x96\x87')
+    print(f4.read())
 
 #操作文件和目录
 '''
+操作系统提供的命令只是简单地调用了操作系统提供的接口函数
+    Py内置的os模块也可以直接调用操作系统提供的接口函数
+1.os.name       # 操作系统类型
+    posix:  Linux,Unix,Mac OS X
+    nt:     Windows
+2.os.uname()    # 详细的系统信息(在Windows上不提供,os模块的某些函数是跟操作系统相关的)
+3.环境变量
+在操作系统中定义的环境变量,全部保存在 os.environ 这个变量中
+    要获取某个环境变量的值,可以调用 os.environ.get('key')
+4.操作文件和目录
+对应接口一部分放在 os 模块中,一部分放在 os.path 模块中
+    os.path.join()      #把两个路径合成一个(不要直接拼字符串)
+        可以正确处理不同操作系统的路径分隔符
+    os.mkdir(...)                   #创建一个目录
+    os.rmdir(...)                   #删掉一个目录
+    os.path.split(...)              #拆分路径(最后级别的目录或文件名)
+    os.path.splitext()              #得到文件扩展名
+        这些合并/拆分路径的函数并不要求目录和文件要真实存在,它们只对字符串进行操作
+    os.rename(old_name, new_name)   #对文件重命名
+    os.remove(...)                  #删掉文件
+    复制文件并非由操作系统提供的系统调用
+        shutil模块提供了copyfile()的函数
 '''
+import os
+def demo005():
+    print(os.name)
+    print(os.uname())
+    print(os.environ)
+    print(os.path.abspath('.')) #查看当前目录的绝对路径
+#列出当前目录下的所有目录
+def demo006():
+    print([x for x in os.listdir('.') if os.path.isdir(x)])
+    print('-----------------------------------')
+    print([x for x in os.listdir('.') if os.path.isfile(x) and os.path.splitext(x)[1]=='.py'])
 
 #序列化
 '''
@@ -100,4 +162,4 @@ def demo002():
     print(json.loads(json.dumps(d)))
 
 if __name__=='__main__':
-    demo002()
+    demo006()
